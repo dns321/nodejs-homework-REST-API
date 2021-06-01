@@ -1,3 +1,4 @@
+const Joi = require("joi");
 const {
   listContacts,
   getContactById,
@@ -53,9 +54,17 @@ const getOne = async (req, res, next) => {
 
 const add = async (req, res, next) => {
   try {
+    const { body } = req;
+    const bodyShema = Joi.object({
+      name: Joi.string().alphanum().required(),
+      email: Joi.string().required(),
+      phone: Joi.number().required(),
+    });
+    bodyShema.validateAsync(body);
+
     const contacts = await listContacts();
     const all = contacts.length;
-    const { body } = req;
+
     const newContact = {
       id: all + 1,
       ...body,
@@ -70,7 +79,7 @@ const add = async (req, res, next) => {
     });
   } catch (error) {
     error.code = 400;
-    error.message = "required field";
+    error.message = "missing required name field";
 
     next(err);
   }
@@ -99,11 +108,20 @@ const delet = async (req, res, next) => {
 
 const edit = async (req, res, next) => {
   try {
+    const { body } = req;
+
+    const bodyShema = Joi.object({
+      name: Joi.string().alphanum(),
+      email: Joi.string(),
+      phone: Joi.number(),
+    });
+    bodyShema.validateAsync(body);
+
     const id = Number(req.params.contactId);
     const contact = await getContactById(id);
 
     if (!contact) throw new Error();
-    const newContact = { ...contact, ...req.body };
+    const newContact = { ...contact, ...body };
     updateContact(id, newContact);
 
     res.json({
